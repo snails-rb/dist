@@ -13,7 +13,6 @@
 # Usage: install.sh [--rev <full-rev>]
 #
 # Environment:
-#   SNALS_REV=<rev>       install this rev instead of the latest release
 #   SNAILS_DIST_BASE_URL  asset base URL (default: the repo's releases)
 #   SNAILS_HOME           install root (default ~/.local/share/snails)
 #   SNAILS_BIN_DIR        symlink location (default ~/.local/bin)
@@ -31,7 +30,7 @@ usage: install.sh [--rev <full-rev>]
 USAGE
 }
 
-rev="${SNALS_REV:-}"
+rev=""
 while (($#)); do
   case "$1" in
     --rev) rev="${2:-}"; shift 2 ;;
@@ -61,7 +60,7 @@ sha256_check() {
 # Latest release via the API: the tag names the rev to install.
 if [[ -z $rev ]]; then
   body="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest")" || {
-    echo "[install] could not resolve the latest release of $REPO — set SNALS_REV" >&2
+    echo "[install] could not resolve the latest release of $REPO — pass --rev <full-rev>" >&2
     exit 1
   }
   tag="$(printf '%s' "$body" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
