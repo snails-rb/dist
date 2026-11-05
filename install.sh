@@ -35,12 +35,12 @@ while (($#)); do
   case "$1" in
     --rev) rev="${2:-}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
-    *) echo "[install] unknown argument: $1" >&2; usage >&2; exit 2 ;;
+    *) echo "[snails] unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
 
-command -v curl >/dev/null 2>&1 || { echo "[install] curl is required" >&2; exit 1; }
-command -v tar >/dev/null 2>&1 || { echo "[install] tar is required" >&2; exit 1; }
+command -v curl >/dev/null 2>&1 || { echo "[snails] curl is required" >&2; exit 1; }
+command -v tar >/dev/null 2>&1 || { echo "[snails] tar is required" >&2; exit 1; }
 
 # download_asset <tag> <asset> <out> — fetch one release asset from the
 # public release repo.
@@ -60,14 +60,14 @@ sha256_check() {
 # Latest release via the API: the tag names the rev to install.
 if [[ -z $rev ]]; then
   body="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest")" || {
-    echo "[install] could not resolve the latest release of $REPO — pass --rev <full-rev>" >&2
+    echo "[snails] could not resolve the latest release of $REPO — pass --rev <full-rev>" >&2
     exit 1
   }
   tag="$(printf '%s' "$body" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
   rev="${tag#rev-}"
 fi
 if [[ ! $rev =~ ^[0-9a-f]{40}$ ]]; then
-  echo "[install] '$rev' is not a full 40-hex rev" >&2
+  echo "[snails] '$rev' is not a full 40-hex rev" >&2
   exit 1
 fi
 
@@ -75,40 +75,40 @@ dest="$SNAILS_HOME/dist/$rev"
 asset="snails-dist-$rev.tar.gz"
 
 if [[ -f $dest/REV && $(<"$dest/REV") == "$rev" ]]; then
-  echo "[install] dist $rev already installed at $dest"
+  echo "[snails] dist $rev already installed at $dest"
 else
   tmp="$dest.tmp.$$"
   rm -rf "$tmp"
   mkdir -p "$tmp"
-  echo "[install] downloading dist $rev" >&2
-  download_asset "rev-$rev" "$asset" "$tmp/$asset" || { rm -rf "$tmp"; echo "[install] dist download failed for $rev" >&2; exit 1; }
-  download_asset "rev-$rev" "$asset.sha256" "$tmp/$asset.sha256" || { rm -rf "$tmp"; echo "[install] checksum download failed for $rev" >&2; exit 1; }
+  echo "[snails] downloading dist $rev" >&2
+  download_asset "rev-$rev" "$asset" "$tmp/$asset" || { rm -rf "$tmp"; echo "[snails] dist download failed for $rev" >&2; exit 1; }
+  download_asset "rev-$rev" "$asset.sha256" "$tmp/$asset.sha256" || { rm -rf "$tmp"; echo "[snails] checksum download failed for $rev" >&2; exit 1; }
   if ! sha256_check "$tmp" "$asset.sha256" >/dev/null; then
     rm -rf "$tmp"
-    echo "[install] checksum mismatch — refusing the download" >&2
+    echo "[snails] checksum mismatch — refusing the download" >&2
     exit 1
   fi
   tar -xzf "$tmp/$asset" -C "$tmp"
   rm -f "$tmp/$asset" "$tmp/$asset.sha256"
   if [[ ! -f $tmp/REV || $(<"$tmp/REV") != "$rev" ]]; then
     rm -rf "$tmp"
-    echo "[install] the downloaded dist does not carry REV=$rev" >&2
+    echo "[snails] the downloaded dist does not carry REV=$rev" >&2
     exit 1
   fi
   mkdir -p "$(dirname "$dest")"
   rm -rf "$dest"
   mv "$tmp" "$dest"
-  echo "[install] dist $rev -> $dest"
+  echo "[snails] dist $rev -> $dest"
 fi
 
 mkdir -p "$SNAILS_BIN_DIR"
 ln -sfn "$dest/bin/snails" "$SNAILS_BIN_DIR/snails"
-echo "[install] linked $SNAILS_BIN_DIR/snails -> $dest/bin/snails"
+echo "[snails] linked $SNAILS_BIN_DIR/snails -> $dest/bin/snails"
 
 case ":$PATH:" in
   *":$SNAILS_BIN_DIR:"*) ;;
-  *) echo "[install] note: $SNAILS_BIN_DIR is not on PATH — add it to use the snails command" ;;
+  *) echo "[snails] note: $SNAILS_BIN_DIR is not on PATH — add it to use the snails command" ;;
 esac
 
-echo "[install] ready — create a project: snails new <dir>"
-echo "[install] tip: 'snails install-shim' adds spin/spinel shims that follow each project's pinned toolchain"
+echo "[snails] ready — create a project: snails new <dir>"
+echo "[snails] tip: 'snails install-shim' adds spin/spinel shims that follow each project's pinned toolchain"
